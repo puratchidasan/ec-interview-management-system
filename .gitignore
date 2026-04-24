@@ -25,6 +25,7 @@ replay_pid*
 *.iml
 *.ipr
 out/
+.claude/
 
 # ─── IDE — Eclipse ────────────────────────────────────────────────────────────
 .apt_generated

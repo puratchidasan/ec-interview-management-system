@@ -25,8 +25,8 @@
         <springdoc.version>2.5.0</springdoc.version>
         <rest-assured.version>5.4.0</rest-assured.version>
         <!-- SonarCloud Configuration — update org/key to match your SonarCloud account -->
-        <sonar.projectKey>ec-interview-management-system</sonar.projectKey>
-        <sonar.organization>your-sonarcloud-org</sonar.organization>
+        <sonar.projectKey>puratchidasan_ec-interview-management-system</sonar.projectKey>
+        <sonar.organization>puratchidasan</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.build.directory}/site/jacoco/jacoco.xml
