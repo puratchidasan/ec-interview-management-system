@@ -32,7 +32,7 @@ management:
 # Application info
 info:
   app:
-    name: European Commission Interview Management System
+    name: European External Action Service Interview Management System
     version: 1.0.0
     description: DevSecOps showcase — full interview lifecycle API
 

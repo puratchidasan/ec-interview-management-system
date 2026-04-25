@@ -1,5 +1,5 @@
 # 🇪🇺 EC Interview Management System
-### European Commission — DevSecOps Showcase
+### European External Action Service — DevSecOps Showcase
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-19-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white"/>
@@ -14,7 +14,7 @@
 
 ---
 
-> **A production-grade Spring Boot REST API** simulating the European Commission's end-to-end candidate interview lifecycle, wrapped in a full **DevSecOps Jenkins pipeline** covering SAST, DAST, and SCA — built to demonstrate real-world Java engineering and security engineering skills.
+> **A production-grade Spring Boot REST API** simulating the European External Action Service's end-to-end candidate interview lifecycle, wrapped in a full **DevSecOps Jenkins pipeline** covering SAST, DAST, and SCA — built to demonstrate real-world Java engineering and security engineering skills.
 
 ---
 
@@ -40,7 +40,7 @@
 
 ## 🎯 Overview
 
-This project models the **European Commission's digital recruitment process** across four distinct modules:
+This project models the **European External Action Service's digital recruitment process** across four distinct modules:
 
 | Module | Responsibility | Status Flow |
 |--------|---------------|-------------|

@@ -20,47 +20,46 @@ import java.util.List;
 @Configuration
 public class OpenApiConfig {
 
-    private static final String BASIC_SCHEME_NAME = "basicAuth";
+        private static final String BASIC_SCHEME_NAME = "basicAuth";
 
-    @Bean
-    public OpenAPI interviewManagementOpenAPI() {
-        return new OpenAPI()
-                .info(apiInfo())
-                .servers(apiServers())
-                .addSecurityItem(new SecurityRequirement().addList(BASIC_SCHEME_NAME))
-                .components(new Components()
-                        .addSecuritySchemes(BASIC_SCHEME_NAME,
-                                new SecurityScheme()
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("basic")
-                                        .description("HTTP Basic Authentication. Default users: admin/admin123 or recruiter/rec123")));
-    }
+        @Bean
+        public OpenAPI interviewManagementOpenAPI() {
+                return new OpenAPI()
+                                .info(apiInfo())
+                                .servers(apiServers())
+                                .addSecurityItem(new SecurityRequirement().addList(BASIC_SCHEME_NAME))
+                                .components(new Components()
+                                                .addSecuritySchemes(BASIC_SCHEME_NAME,
+                                                                new SecurityScheme()
+                                                                                .type(SecurityScheme.Type.HTTP)
+                                                                                .scheme("basic")
+                                                                                .description("HTTP Basic Authentication. Default users: admin/admin123 or recruiter/rec123")));
+        }
 
-    private Info apiInfo() {
-        return new Info()
-                .title("European Commission — Interview Management System API")
-                .description("""
-                        REST API managing the full interview lifecycle for the European Commission.
-                        
-                        **Pipeline:**
-                        `Resume Submission` → `Screening` → `Technical Interview` → `Feedback & Decision`
-                        
-                        **DevSecOps Stack:** Jenkins · SonarCloud (SAST) · OWASP ZAP (DAST) · OWASP Dependency-Check (SCA)
-                        """)
-                .version("1.0.0")
-                .contact(new Contact()
-                        .name("EC HR Digital Team")
-                        .email("hr-digital@ec.europa.eu")
-                        .url("https://ec.europa.eu"))
-                .license(new License()
-                        .name("European Union Public Licence v1.2")
-                        .url("https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"));
-    }
+        private Info apiInfo() {
+                return new Info()
+                                .title("European External Action Service — Interview Management System API")
+                                .description("""
+                                                REST API managing the full interview lifecycle for the European External Action Service.
 
-    private List<Server> apiServers() {
-        return List.of(
-                new Server().url("http://localhost:8080").description("Local Development"),
-                new Server().url("https://ims.ec.europa.eu").description("Production")
-        );
-    }
+                                                **Pipeline:**
+                                                `Resume Submission` → `Screening` → `Technical Interview` → `Feedback & Decision`
+
+                                                **DevSecOps Stack:** Jenkins · SonarCloud (SAST) · OWASP ZAP (DAST) · OWASP Dependency-Check (SCA)
+                                                """)
+                                .version("1.0.0")
+                                .contact(new Contact()
+                                                .name("EC HR Digital Team")
+                                                .email("hr-digital@ec.europa.eu")
+                                                .url("https://ec.europa.eu"))
+                                .license(new License()
+                                                .name("European Union Public Licence v1.2")
+                                                .url("https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"));
+        }
+
+        private List<Server> apiServers() {
+                return List.of(
+                                new Server().url("http://localhost:8080").description("Local Development"),
+                                new Server().url("https://ims.ec.europa.eu").description("Production"));
+        }
 }

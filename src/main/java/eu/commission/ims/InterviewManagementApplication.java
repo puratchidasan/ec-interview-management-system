@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
- * European Commission — Interview Management System
+ * European External Action Service — Interview Management System
  * <p>
  * Entry point for the DevSecOps showcase application.
  * Manages the full interview lifecycle:

@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     /*
-     * European Commission — Interview Management System
+     * European External Action Service — Interview Management System
      * Jenkins Declarative Pipeline — DevSecOps Showcase
      *
      * Stages:

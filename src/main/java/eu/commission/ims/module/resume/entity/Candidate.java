@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a job applicant (candidate) in the European Commission recruitment process.
+ * Represents a job applicant (candidate) in the European External Action
+ * Service recruitment process.
  */
 @Entity
 @Table(name = "candidates", uniqueConstraints = {

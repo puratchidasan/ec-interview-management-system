@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   OWASP Dependency-Check Suppression File
-  European Commission — Interview Management System
+  European External Action Service — Interview Management System
 
   Use this file to suppress known false-positives in the SCA report.
   Each suppression should include a justification comment.

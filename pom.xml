@@ -18,7 +18,7 @@
     <packaging>jar</packaging>
 
     <name>Interview Management System</name>
-    <description>European Commission Interview Management System — DevSecOps Showcase</description>
+    <description>European External Action Service Interview Management System — DevSecOps Showcase</description>
 
     <properties>
         <java.version>19</java.version>
