@@ -1,4 +1,7 @@
 # 🇪🇺 EEAS Interview Management System
+
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=puratchidasan_ec-interview-management-system)](https://sonarcloud.io/summary/new_code?id=puratchidasan_ec-interview-management-system)
+
 ### European External Action Service — DevSecOps Showcase
 
 <p align="center">
