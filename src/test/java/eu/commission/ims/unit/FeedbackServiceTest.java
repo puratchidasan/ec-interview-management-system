@@ -28,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -180,10 +181,9 @@ class FeedbackServiceTest {
         }
 
         @Test
-        @DisplayName("Should verify weighted overall score calculation")
+        @DisplayName("Should verify weighted overall score: technical=80, behavioral=60, communication=100 → 78.0")
         void submitFeedback_OverallScoreCalculation_IsCorrect() {
-            // technical=80, behavioral=60, communication=100
-            // expected = 80*0.5 + 60*0.3 + 100*0.2 = 40 + 18 + 20 = 78.0
+            // 80*0.5 + 60*0.3 + 100*0.2 = 40 + 18 + 20 = 78.0
             Feedback fb = Feedback.builder()
                     .id(2L).interview(completedInterview)
                     .technicalScore(80).behavioralScore(60).communicationScore(100)
@@ -191,6 +191,172 @@ class FeedbackServiceTest {
             fb.calculateOverallScore();
 
             assertThat(fb.getOverallScore()).isEqualTo(78.0);
+        }
+
+        @Test
+        @DisplayName("Should calculate 0.0 overall score when all scores are 0")
+        void submitFeedback_AllZeroScores_OverallScoreIsZero() {
+            Feedback fb = Feedback.builder()
+                    .id(3L).interview(completedInterview)
+                    .technicalScore(0).behavioralScore(0).communicationScore(0)
+                    .isFinalized(false).build();
+            fb.calculateOverallScore();
+
+            assertThat(fb.getOverallScore()).isEqualTo(0.0);
+        }
+
+        @Test
+        @DisplayName("Should calculate 100.0 overall score when all scores are 100")
+        void submitFeedback_AllMaxScores_OverallScoreIsHundred() {
+            Feedback fb = Feedback.builder()
+                    .id(4L).interview(completedInterview)
+                    .technicalScore(100).behavioralScore(100).communicationScore(100)
+                    .isFinalized(false).build();
+            fb.calculateOverallScore();
+
+            assertThat(fb.getOverallScore()).isEqualTo(100.0);
+        }
+    }
+
+    @Nested
+    @DisplayName("finalizeFeedback() — all decisions")
+    class FinalizeAllDecisionsTests {
+
+        @Test
+        @DisplayName("Should finalize with REJECTED decision")
+        void finalizeFeedback_Rejected_SetsDecisionAndLocks() {
+            FinalizeRequest req = new FinalizeRequest();
+            req.setFinalDecision(FinalDecision.REJECTED);
+
+            when(feedbackRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(draftFeedback));
+            when(feedbackRepository.save(any())).thenReturn(draftFeedback);
+
+            feedbackService.finalizeFeedback(1L, req);
+
+            assertThat(draftFeedback.getFinalDecision()).isEqualTo(FinalDecision.REJECTED);
+            assertThat(draftFeedback.getIsFinalized()).isTrue();
+            assertThat(draftFeedback.getFinalizedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should finalize with ON_HOLD decision")
+        void finalizeFeedback_OnHold_SetsDecisionAndLocks() {
+            FinalizeRequest req = new FinalizeRequest();
+            req.setFinalDecision(FinalDecision.ON_HOLD);
+
+            when(feedbackRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(draftFeedback));
+            when(feedbackRepository.save(any())).thenReturn(draftFeedback);
+
+            feedbackService.finalizeFeedback(1L, req);
+
+            assertThat(draftFeedback.getFinalDecision()).isEqualTo(FinalDecision.ON_HOLD);
+            assertThat(draftFeedback.getIsFinalized()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should update recommendation when provided in finalize request")
+        void finalizeFeedback_WithRecommendation_UpdatesRecommendation() {
+            FinalizeRequest req = new FinalizeRequest();
+            req.setFinalDecision(FinalDecision.HIRED);
+            req.setRecommendation("Strongly recommend for Policy Officer role.");
+
+            when(feedbackRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(draftFeedback));
+            when(feedbackRepository.save(any())).thenReturn(draftFeedback);
+
+            feedbackService.finalizeFeedback(1L, req);
+
+            assertThat(draftFeedback.getRecommendation()).isEqualTo("Strongly recommend for Policy Officer role.");
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException for unknown feedback ID")
+        void finalizeFeedback_NotFound_ThrowsException() {
+            when(feedbackRepository.findByIdWithDetails(99L)).thenReturn(Optional.empty());
+
+            FinalizeRequest req = new FinalizeRequest();
+            req.setFinalDecision(FinalDecision.HIRED);
+
+            assertThatThrownBy(() -> feedbackService.finalizeFeedback(99L, req))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Feedback");
+        }
+    }
+
+    @Nested
+    @DisplayName("getFeedbackByCandidateId()")
+    class GetByCandidateTests {
+
+        @Test
+        @DisplayName("Should return list of feedbacks for a given candidate")
+        void getFeedbackByCandidateId_ReturnsList() {
+            when(feedbackRepository.findByCandidateId(1L)).thenReturn(List.of(draftFeedback));
+
+            List<FeedbackResponse> result = feedbackService.getFeedbackByCandidateId(1L);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getTechnicalScore()).isEqualTo(85);
+        }
+
+        @Test
+        @DisplayName("Should return empty list for candidate with no feedbacks")
+        void getFeedbackByCandidateId_EmptyList() {
+            when(feedbackRepository.findByCandidateId(99L)).thenReturn(List.of());
+
+            List<FeedbackResponse> result = feedbackService.getFeedbackByCandidateId(99L);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getPendingFeedbacks()")
+    class GetPendingTests {
+
+        @Test
+        @DisplayName("Should return all unfinalized feedbacks")
+        void getPendingFeedbacks_ReturnsList() {
+            when(feedbackRepository.findAllByIsFinalized(false)).thenReturn(List.of(draftFeedback));
+
+            List<FeedbackResponse> result = feedbackService.getPendingFeedbacks();
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getIsFinalized()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should return empty list when all feedbacks are finalized")
+        void getPendingFeedbacks_EmptyList() {
+            when(feedbackRepository.findAllByIsFinalized(false)).thenReturn(List.of());
+
+            List<FeedbackResponse> result = feedbackService.getPendingFeedbacks();
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getFeedbackByInterviewId()")
+    class GetByInterviewTests {
+
+        @Test
+        @DisplayName("Should return feedback for given interview ID")
+        void getFeedbackByInterviewId_Found_ReturnsResponse() {
+            when(feedbackRepository.findByInterviewId(1L)).thenReturn(Optional.of(draftFeedback));
+
+            FeedbackResponse result = feedbackService.getFeedbackByInterviewId(1L);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getInterviewId()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException for interview with no feedback")
+        void getFeedbackByInterviewId_NotFound_ThrowsException() {
+            when(feedbackRepository.findByInterviewId(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> feedbackService.getFeedbackByInterviewId(99L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Feedback");
         }
     }
 }

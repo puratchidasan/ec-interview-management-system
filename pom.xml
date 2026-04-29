@@ -147,6 +147,27 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <!--
+                      Excluded from instrumentation:
+                        - DTOs: Lombok @Data generates equals/hashCode with hundreds of
+                          uncoverable branches that would mask the real coverage signal
+                        - Entities: same Lombok issue; also @PrePersist lifecycle coverage
+                          is not meaningful to gate on
+                        - Repositories: Spring Data interfaces with no business logic
+                        - Config / exception / common infrastructure classes
+                    -->
+                    <excludes>
+                        <exclude>eu/commission/ims/*Application.class</exclude>
+                        <exclude>eu/commission/ims/config/**</exclude>
+                        <exclude>eu/commission/ims/common/audit/**</exclude>
+                        <exclude>eu/commission/ims/common/dto/**</exclude>
+                        <exclude>eu/commission/ims/common/exception/**</exclude>
+                        <exclude>eu/commission/ims/module/*/entity/**</exclude>
+                        <exclude>eu/commission/ims/module/*/dto/**</exclude>
+                        <exclude>eu/commission/ims/module/*/repository/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -171,22 +192,18 @@
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
-                                    <excludes>
-                                        <exclude>eu.commission.ims.config.*</exclude>
-                                        <exclude>eu.commission.ims.common.dto.*</exclude>
-                                        <exclude>eu.commission.ims.common.exception.*</exclude>
-                                        <exclude>eu.commission.ims.*Application</exclude>
-                                    </excludes>
                                     <limits>
+                                        <!-- 70% line coverage on service + controller classes -->
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.00</minimum>
+                                            <minimum>0.70</minimum>
                                         </limit>
+                                        <!-- 70% branch coverage on service + controller business logic -->
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.00</minimum>
+                                            <minimum>0.70</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

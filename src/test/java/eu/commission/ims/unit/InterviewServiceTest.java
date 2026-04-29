@@ -4,6 +4,7 @@ import eu.commission.ims.common.exception.BusinessException;
 import eu.commission.ims.common.exception.ResourceNotFoundException;
 import eu.commission.ims.module.interview.dto.InterviewRequest;
 import eu.commission.ims.module.interview.dto.InterviewResponse;
+import eu.commission.ims.module.interview.dto.RescheduleRequest;
 import eu.commission.ims.module.interview.entity.Interview;
 import eu.commission.ims.module.interview.entity.InterviewStatus;
 import eu.commission.ims.module.interview.entity.InterviewType;
@@ -25,10 +26,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -96,6 +99,33 @@ class InterviewServiceTest {
             assertThatThrownBy(() -> interviewService.scheduleInterview(req))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("PASSED");
+        }
+
+        @Test
+        @DisplayName("Should throw BusinessException when screening is FAILED")
+        void scheduleInterview_FailedScreening_ThrowsException() {
+            passedScreening.setDecision(ScreeningDecision.FAILED);
+            InterviewRequest req = new InterviewRequest();
+            req.setScreeningId(1L);
+
+            when(screeningRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(passedScreening));
+
+            assertThatThrownBy(() -> interviewService.scheduleInterview(req))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Decision: FAILED");
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when screening not found")
+        void scheduleInterview_ScreeningNotFound_ThrowsException() {
+            InterviewRequest req = new InterviewRequest();
+            req.setScreeningId(99L);
+
+            when(screeningRepository.findByIdWithDetails(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> interviewService.scheduleInterview(req))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Screening");
         }
     }
 
@@ -176,6 +206,132 @@ class InterviewServiceTest {
             assertThatThrownBy(() -> interviewService.getInterviewById(99L))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Interview");
+        }
+
+        @Test
+        @DisplayName("Should return interview response when found")
+        void getInterviewById_Found_ReturnsResponse() {
+            when(interviewRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(scheduledInterview));
+
+            InterviewResponse result = interviewService.getInterviewById(1L);
+
+            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getStatus()).isEqualTo(InterviewStatus.SCHEDULED);
+        }
+    }
+
+    @Nested
+    @DisplayName("rescheduleInterview()")
+    class RescheduleTests {
+
+        @Test
+        @DisplayName("Should reschedule a SCHEDULED interview and set status to RESCHEDULED")
+        void rescheduleInterview_Scheduled_SetsRescheduledStatus() {
+            RescheduleRequest req = new RescheduleRequest();
+            req.setScheduledAt(LocalDateTime.now().plusDays(14));
+            req.setDurationMinutes(90);
+            req.setLocation("Brussels HQ");
+
+            when(interviewRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(scheduledInterview));
+            when(interviewRepository.save(any())).thenReturn(scheduledInterview);
+
+            InterviewResponse result = interviewService.rescheduleInterview(1L, req);
+
+            assertThat(scheduledInterview.getStatus()).isEqualTo(InterviewStatus.RESCHEDULED);
+            assertThat(scheduledInterview.getDurationMinutes()).isEqualTo(90);
+            assertThat(scheduledInterview.getLocation()).isEqualTo("Brussels HQ");
+        }
+
+        @Test
+        @DisplayName("Should throw BusinessException when rescheduling a COMPLETED interview")
+        void rescheduleInterview_Completed_ThrowsException() {
+            scheduledInterview.setStatus(InterviewStatus.COMPLETED);
+            RescheduleRequest req = new RescheduleRequest();
+            req.setScheduledAt(LocalDateTime.now().plusDays(14));
+
+            when(interviewRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(scheduledInterview));
+
+            assertThatThrownBy(() -> interviewService.rescheduleInterview(1L, req))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Cannot reschedule");
+        }
+
+        @Test
+        @DisplayName("Should throw BusinessException when rescheduling a CANCELLED interview")
+        void rescheduleInterview_Cancelled_ThrowsException() {
+            scheduledInterview.setStatus(InterviewStatus.CANCELLED);
+            RescheduleRequest req = new RescheduleRequest();
+            req.setScheduledAt(LocalDateTime.now().plusDays(14));
+
+            when(interviewRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(scheduledInterview));
+
+            assertThatThrownBy(() -> interviewService.rescheduleInterview(1L, req))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Cannot reschedule");
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException for unknown interview ID")
+        void rescheduleInterview_NotFound_ThrowsException() {
+            when(interviewRepository.findByIdWithDetails(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> interviewService.rescheduleInterview(99L, new RescheduleRequest()))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Interview");
+        }
+    }
+
+    @Nested
+    @DisplayName("getInterviewsByStatus()")
+    class GetByStatusTests {
+
+        @Test
+        @DisplayName("Should return interviews matching the given status")
+        void getInterviewsByStatus_ReturnsMatchingList() {
+            when(interviewRepository.findAllByStatus(InterviewStatus.SCHEDULED))
+                    .thenReturn(List.of(scheduledInterview));
+
+            List<InterviewResponse> result = interviewService.getInterviewsByStatus(InterviewStatus.SCHEDULED);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getStatus()).isEqualTo(InterviewStatus.SCHEDULED);
+        }
+
+        @Test
+        @DisplayName("Should return empty list when no interviews match status")
+        void getInterviewsByStatus_EmptyResult() {
+            when(interviewRepository.findAllByStatus(InterviewStatus.CANCELLED)).thenReturn(List.of());
+
+            List<InterviewResponse> result = interviewService.getInterviewsByStatus(InterviewStatus.CANCELLED);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getUpcomingInterviews()")
+    class GetUpcomingTests {
+
+        @Test
+        @DisplayName("Should return interviews scheduled within the next 30 days")
+        void getUpcomingInterviews_ReturnsUpcomingList() {
+            when(interviewRepository.findUpcoming(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .thenReturn(List.of(scheduledInterview));
+
+            List<InterviewResponse> result = interviewService.getUpcomingInterviews();
+
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should return empty list when no upcoming interviews exist")
+        void getUpcomingInterviews_EmptyResult() {
+            when(interviewRepository.findUpcoming(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .thenReturn(List.of());
+
+            List<InterviewResponse> result = interviewService.getUpcomingInterviews();
+
+            assertThat(result).isEmpty();
         }
     }
 }
